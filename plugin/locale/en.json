@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Mobile Control",
+    "description": "Bring Android devices into DSH: agents drive the phone, a live mirror sits in the right sidebar, and one prompt can be dispatched to many devices."
+  }
+}

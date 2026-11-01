@@ -1,0 +1,51 @@
+# 依赖
+node_modules/
+.pnp/
+.pnp.js
+
+# 第三方二进制：由 node plugin/scripts/fetch-vendor.mjs 下载，见 plugin/vendor/README.md
+plugin/vendor/scrcpy-server
+plugin/vendor/yadb
+
+# 参考项目（本地镜像，体量很大，不进版本库）
+.example/
+
+# 日志
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 环境变量：真实配置不进库，示例保留
+.env
+.env.*
+!.env.example
+
+# 缓存与构建产物
+.cache/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+coverage/
+dist/
+build/
+out/
+
+# 编辑器 / IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk

@@ -1,0 +1,39 @@
+{
+  "name": "@local/dsh-mobile-control",
+  "version": "0.1.0",
+  "private": true,
+  "description": "从 DSH 会话操作 Android 手机，并在右侧栏实时投屏",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "host/**",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "scripts/**",
+    "test/**",
+    "vendor/**"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-sidebar-right"]
+    }
+  },
+  "scripts": {
+    "fetch-vendor": "node scripts/fetch-vendor.mjs",
+    "test": "node test/android.mjs"
+  },
+  "license": "MIT"
+}
