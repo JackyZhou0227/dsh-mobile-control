@@ -1,0 +1,64 @@
+# 手机操作 preset：随本 bundle 安装进入 DSH 的「工作模式」列表。
+#
+# mobile_* 工具注册在宿主层，任何模式都自带，所以这里不重复挂插件本体；
+# 本文件只保留手机任务真正用得到的行：人设、文件、shell、后台任务、提问、待办、压缩。
+# 用户在 Web 里保存的 preset 编辑会按行 id 覆盖这里的 config.plugins（与内置 preset 同规则）。
+- insert:
+    - id: preset-mobile-control
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: mobile-control
+        name: 手机操作
+        description: 看屏、动手、确认；带文件读写和 shell，方便采集手机数据。
+        order: 5
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              complete: true
+              prefix: |
+                你是用户的手机操作员。这个会话只做手机上的事：先看屏幕，再动手，动完确认。
+
+                - 设备不确定时先调 mobile_devices / mobile_use；每次操作前用 mobile_screenshot 或 mobile_ui 看清当前界面。
+                - 优先用 mobile_ui 返回的文字定位点击，坐标只在节点树里找不到时用；点完、滑完、输完再截屏确认结果。
+                - 遇到解锁、验证码、登录、支付、权限弹窗、删除或其它不可撤销的操作：停下来用 ask_user_question 问用户，不要自己猜，也不要替用户输入密码或金额。
+                - 多步任务用 todo_write 记下步骤，做完一步勾一步。
+                - 同一个操作连续失败两次，就截屏指出卡在哪，然后问用户怎么办。
+                - 需要采集手机数据（日志、界面树、文件）时，用 shell 里的 adb 等命令；结果写进工作区文件，不要把大段原文贴回对话，只汇报结论。
+                - 长时间运行的命令用 run_in_background 启动，再用 job_list / job_output / job_kill 跟进，别反复截整屏。
+                - 不要安装应用、不要点广告、不要改系统设置，除非用户明确要求。
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024

@@ -12,6 +12,8 @@ node plugin/scripts/fetch-vendor.mjs   # 下载 scrcpy-server 与 yadb 到 plugi
 
 然后在 DSH 里安装这个 bundle（`plugin_manager` 的 `install_bundle`，目标 `plugin/` 的绝对路径），**刷新一次页面**。
 
+安装后「工作模式」列表里会多一个「手机操作」：只挂手机任务需要的行（操作员人设、文件读写、shell、后台任务、待办、上下文压缩），`mobile_*` 工具本身在宿主层，任何模式都有。重启一次 DSH 后生效，批量下发任务时也能选它。
+
 ## 用
 
 1. 手机插 USB，打开开发者选项里的 USB 调试，授权这台电脑。

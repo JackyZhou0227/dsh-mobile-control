@@ -15,6 +15,7 @@
     "client.js",
     "host/**",
     "cordis.patch.yml",
+    "presets/*.patch.yml",
     "locale/*.json",
     "icon.svg",
     "scripts/**",
@@ -23,7 +24,7 @@
   ],
   "dsh": {
     "bundle": {
-      "patch": "./cordis.patch.yml"
+      "patch": ["./cordis.patch.yml", "./presets/mobile.patch.yml"]
     },
     "client": {
       "platform": "web",
