@@ -45,6 +45,8 @@
             name: '@deepseek-ai/dsh-tool-ask-user'
           - id: tool-todo
             name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: false
           - id: compaction
             name: cordis:group
             group: true
