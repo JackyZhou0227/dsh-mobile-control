@@ -54,6 +54,7 @@ window.__ModuleLoader__.load({
       'preset.ptc': 'PTC',
       'preset.minimal': '极简',
       'preset.cordis': 'Cordis',
+      'preset.mobile-control': '手机操作',
       'perm.read-only': '只读',
       'perm.workspace-write': '工作区内修改',
       'perm.danger-full-access': '完全访问',
@@ -114,6 +115,7 @@ window.__ModuleLoader__.load({
       'preset.ptc': 'PTC',
       'preset.minimal': 'Minimal',
       'preset.cordis': 'Cordis',
+      'preset.mobile-control': 'Phone ops',
       'perm.read-only': 'Read-only',
       'perm.workspace-write': 'Workspace write',
       'perm.danger-full-access': 'Full access',
@@ -943,6 +945,7 @@ window.__ModuleLoader__.load({
               setPreset(
                 (current) =>
                   current ||
+                  data.presets?.find((item) => item.id === 'mobile-control')?.id ||
                   data.presets?.find((item) => item.isDefault)?.id ||
                   data.presets?.[0]?.id ||
                   '',
