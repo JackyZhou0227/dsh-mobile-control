@@ -146,7 +146,7 @@ window.__ModuleLoader__.load({
 .dmc-root button,.dmc-root input,.dmc-root textarea{font-family:inherit}
 .dmc-icon{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
 .dmc-icon:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
-.dmc-icon:disabled{color:var(--dsw-alias-label-quaternary);cursor:default}
+.dmc-icon:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}
 .dmc-main{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:10px;gap:8px;overflow:hidden}
 /* ponytail: 画布靠 max-height:100% 收在 stage 里；stage 这条 vh 上限是兜底，防止槽位哪天不再给确定高度时投屏又撑满整屏。 */
 .dmc-stage{flex:1 1 auto;min-height:0;max-height:calc(100vh - 220px);box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:6px;overflow:visible}
@@ -167,13 +167,13 @@ window.__ModuleLoader__.load({
 .dmc-sub{color:var(--dsw-alias-label-tertiary);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dmc-btn{flex:none;height:24px;padding:0 9px;border:.5px solid var(--dsw-alias-border-l2);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1;cursor:pointer;white-space:nowrap}
 .dmc-btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
-.dmc-btn:disabled{color:var(--dsw-alias-label-quaternary);cursor:default}
+.dmc-btn:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}
 /* 主操作（认领）用品牌色实心；其余按钮保持幽灵态，避免满屏彩色 */
 .dmc-btn.primary{background:var(--dmc-accent);border-color:transparent;color:#fff}
 .dmc-btn.primary:hover:not(:disabled){background:var(--dmc-accent);color:#fff;opacity:.9}
-.dmc-btn.primary:disabled{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-quaternary)}
+.dmc-btn.primary:disabled{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-tertiary)}
 .dmc-empty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--dsw-alias-label-tertiary);padding:24px 16px}
-.dmc-notes{flex:none;color:var(--dsw-alias-label-quaternary);font-size:11px;white-space:pre-wrap}
+.dmc-notes{flex:none;color:var(--dsw-alias-label-tertiary);font-size:11px;white-space:pre-wrap}
 .dmc-error{flex:none;color:var(--dsw-alias-state-error-primary);font-size:11px;white-space:pre-wrap}
 .dmc-foot{flex:none;display:flex;flex-direction:column;gap:8px;padding:8px 12px 10px;border-top:.5px solid var(--dsw-alias-border-l3);max-height:42vh;overflow-y:auto}
 .dmc-status{display:flex;align-items:center;gap:6px;color:var(--dsw-alias-label-tertiary);font-size:11px}
@@ -184,7 +184,7 @@ window.__ModuleLoader__.load({
 .dmc-dot.bad{background:var(--dsw-alias-state-error-primary)}
 .dmc-info{display:none;flex-direction:column;gap:4px;padding-bottom:4px}
 .dmc-kv{display:flex;gap:8px;font-size:11px;line-height:1.6}
-.dmc-kv b{flex:none;width:40px;font-weight:400;color:var(--dsw-alias-label-quaternary)}
+.dmc-kv b{flex:none;width:40px;font-weight:400;color:var(--dsw-alias-label-tertiary)}
 .dmc-kv span{flex:1 1 auto;min-width:0;color:var(--dsw-alias-label-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dmc-h2{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--dsw-alias-label-primary)}
 /* 一级标题前的一小段品牌色，只做层次提示，不做装饰 */
@@ -197,7 +197,7 @@ window.__ModuleLoader__.load({
 .dmc-composer{display:flex;flex-direction:column;gap:4px;padding:9px 9px 7px 12px;border:.5px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-1)}
 .dmc-composer:focus-within{border-color:var(--dsw-alias-border-l2);border-color:color-mix(in srgb,var(--dmc-accent) 40%,var(--dsw-alias-border-l2))}
 .dmc-composerInput{width:100%;min-height:44px;max-height:140px;box-sizing:border-box;resize:none;border:0;padding:2px 0;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;outline:none}
-.dmc-composerInput::placeholder{color:var(--dsw-alias-label-quaternary)}
+.dmc-composerInput::placeholder{color:var(--dsw-alias-label-tertiary)}
 .dmc-composerBar{display:flex;align-items:center;gap:2px;row-gap:4px;flex-wrap:wrap;min-width:0}
 .dmc-picker{position:relative;display:inline-flex;flex:none;max-width:150px;min-width:0}
 .dmc-chipBtn{display:inline-flex;align-items:center;gap:5px;position:relative;max-width:150px;height:24px;padding:0 20px 0 6px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;cursor:pointer}
@@ -223,7 +223,7 @@ window.__ModuleLoader__.load({
 .dmc-root.picking .dmc-foot{overflow:visible}
 .dmc-send{flex:none;margin-left:auto;width:26px;height:26px;border-radius:50%;border:0;display:inline-flex;align-items:center;justify-content:center;background:var(--dmc-accent);color:#fff;cursor:pointer}
 .dmc-send:hover:not(:disabled){opacity:.86}
-.dmc-send:disabled{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-quaternary);cursor:default}
+.dmc-send:disabled{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-tertiary);cursor:default}
 .dmc-resizer{display:none}
 /* 没认领设备时是「整页滚动的列表页」，不是列表在上、输入框钉在底部、中间空一大片。 */
 /* 没认领设备时是「整页滚动的列表页」，不是列表在上、输入框钉在底部、中间空一大片。
@@ -232,7 +232,7 @@ window.__ModuleLoader__.load({
 .dmc-root.idle .dmc-main{flex:0 0 auto;overflow:visible;width:100%;max-width:640px;margin:0 auto;padding:10px 12px 12px}
 .dmc-root.idle .dmc-list{flex:0 0 auto;overflow:visible}
 .dmc-root.idle .dmc-foot{flex:0 0 auto;overflow:visible;width:100%;max-width:640px;margin:0 auto;max-height:none;padding:10px 12px 12px;border-top:.5px solid var(--dsw-alias-border-l3)}
-.dmc-hintText{color:var(--dsw-alias-label-quaternary);font-size:11px;line-height:1.6}
+.dmc-hintText{color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:1.6}
 .dmc-release{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:2px;padding-top:8px;border-top:.5px solid var(--dsw-alias-border-l3)}
 .dmc-release .dmc-hintText{flex:1 1 140px;min-width:0}
 .dmc-badge{flex:none;padding:1px 6px;border-radius:999px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:1.7}
