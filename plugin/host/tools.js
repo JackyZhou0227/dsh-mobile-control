@@ -47,7 +47,8 @@ export function registerTools(ctx, { registry }) {
     isConcurrencySafe: () => true,
     async execute(_args, exec) {
       await registry.refresh(true)
-      return registry.view(sessionIdOf(exec))
+      // 设备详情/租约字段可能是 undefined，而工具结果通道只收无损 JSON，会整条拒收。
+      return JSON.parse(JSON.stringify(registry.view(sessionIdOf(exec))))
     },
   })
 
