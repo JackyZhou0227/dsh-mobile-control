@@ -3,6 +3,7 @@ import { createServer } from 'node:http'
 import { Registry } from '../host/registry.js'
 import { StreamManager, FLAG_META } from '../host/scrcpy.js'
 import { registerRoutes } from '../host/routes.js'
+import { sessionAliveProbe } from '../index.js'
 
 const ADB = process.env.ADB_PATH || 'adb'
 const config = { adbPath: ADB, streamMaxFps: 30, streamMaxSize: 1024, uiDumpTimeoutMs: 20000 }
@@ -13,6 +14,8 @@ const created = []
 const prompted = []
 const modelsSelected = []
 const permissionsSet = []
+const archived = new Set()
+const deleted = new Set()
 const fakeSessions = {
   async create(options) {
     const sessionId = `session-${created.length + 1}`
@@ -64,13 +67,21 @@ const ctx = {
       }
     }
     if (name === 'sessions') {
-      return { get: (id) => ({ id }) }
+      return { get: (id) => (deleted.has(id) ? undefined : { id }) }
+    }
+    if (name === 'workspaceRegistry') {
+      return {
+        get archivedSessionIds() {
+          return [...archived]
+        },
+      }
     }
     return undefined
   },
 }
 
 const registry = new Registry(config)
+registry.setSessionProbe(sessionAliveProbe(ctx))
 const streams = new StreamManager(config)
 const base = '/mobile-control/test-token'
 registerRoutes(ctx, { registry, streams, base })
@@ -201,10 +212,54 @@ try {
   })
   assert.equal(dispatch3.body.results[0].ok, true)
   assert.equal(created.length, 2)
-  assert.equal(created[1].options.cwd, '/ws/one', '应使用所选工作区的路径')
+  // session.create 只接受 workspaceId 或 cwd 其一，两个都给会报「accepts workspaceId or cwd, not both」
   assert.equal(created[1].options.workspaceId, 'ws-1')
+  assert.equal(created[1].options.cwd, undefined, '指定工作区时不能再传 cwd')
   console.log('ok 批量下发指定工作区')
   console.log('ok 批量下发自动建会话（cwd/预设/模型/权限）')
+
+  // 会话归档 / 删除后自动解绑：租约跟着会话一起失效
+  await json('/release', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sessionId: created[1].sessionId }),
+  })
+  await json('/claim', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ deviceId, sessionId: 'session-archived' }),
+  })
+  archived.add('session-archived')
+  const afterArchive = await json('/state?sessionId=session-archived')
+  assert.equal(afterArchive.body.lease, null, '归档的会话不该再持有手机')
+  assert.equal(afterArchive.body.devices.find((item) => item.id === deviceId).claimedBy, 'free')
+
+  await json('/claim', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ deviceId, sessionId: 'session-deleted' }),
+  })
+  deleted.add('session-deleted')
+  const afterDelete = await json('/state?sessionId=session-deleted')
+  assert.equal(afterDelete.body.lease, null, '删除的会话不该再持有手机')
+  assert.equal(afterDelete.body.devices.find((item) => item.id === deviceId).claimedBy, 'free')
+  console.log('ok 归档/删除会话自动解绑')
+
+  // 设备列表里的兜底解绑：只给 deviceId 就能松开，不用知道是哪个会话持有
+  await json('/claim', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ deviceId, sessionId: 'session-stuck' }),
+  })
+  const unbound = await json('/release', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ deviceId }),
+  })
+  assert.equal(unbound.status, 200)
+  assert.equal(unbound.body.released, 'session-stuck')
+  assert.equal(unbound.body.devices.find((item) => item.id === deviceId).claimedBy, 'free')
+  console.log('ok 按设备解绑')
 
   // 下发栏的可选项
   const options = await json('/options')

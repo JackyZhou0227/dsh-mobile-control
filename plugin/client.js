@@ -73,6 +73,8 @@ window.__ModuleLoader__.load({
       'claim.taken': '已被占用',
       'claim.goto': '前往绑定会话',
       'claim.unavailable': '不可用',
+      unbind: '解绑',
+      'unbind.noop': '解绑没生效，宿主可能还是旧版；重载插件后再试。',
     }
 
     const en = {
@@ -134,6 +136,8 @@ window.__ModuleLoader__.load({
       'claim.taken': 'Taken',
       'claim.goto': 'Open session',
       'claim.unavailable': 'Unavailable',
+      unbind: 'Unbind',
+      'unbind.noop': 'Unbind did nothing — the host is probably an older build. Reload the plugin and retry.',
     }
 
     // 除 --dmc-accent 外只用 host 的 alias token，主题切换会自动跟着变。
@@ -168,6 +172,7 @@ window.__ModuleLoader__.load({
 .dmc-btn{flex:none;height:24px;padding:0 9px;border:.5px solid var(--dsw-alias-border-l2);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1;cursor:pointer;white-space:nowrap}
 .dmc-btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .dmc-btn:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}
+.dmc-actions{flex:none;display:flex;gap:6px}
 /* 主操作（认领）用品牌色实心；其余按钮保持幽灵态，避免满屏彩色 */
 .dmc-btn.primary{background:var(--dmc-accent);border-color:transparent;color:#fff}
 .dmc-btn.primary:hover:not(:disabled){background:var(--dmc-accent);color:#fff;opacity:.9}
@@ -229,9 +234,9 @@ window.__ModuleLoader__.load({
 /* 没认领设备时是「整页滚动的列表页」，不是列表在上、输入框钉在底部、中间空一大片。
    宽度和留白写在基础规则里：不依赖容器查询，任何宽度下都有边距和居中。 */
 .dmc-root.idle{overflow-y:auto}
-.dmc-root.idle .dmc-main{flex:0 0 auto;overflow:visible;width:100%;max-width:640px;margin:0 auto;padding:10px 12px 12px}
+.dmc-root.idle .dmc-main{box-sizing:border-box;flex:0 0 auto;overflow:visible;width:100%;max-width:640px;margin:0 auto;padding:10px 12px 12px}
 .dmc-root.idle .dmc-list{flex:0 0 auto;overflow:visible}
-.dmc-root.idle .dmc-foot{flex:0 0 auto;overflow:visible;width:100%;max-width:640px;margin:0 auto;max-height:none;padding:10px 12px 12px;border-top:.5px solid var(--dsw-alias-border-l3)}
+.dmc-root.idle .dmc-foot{box-sizing:border-box;flex:0 0 auto;overflow:visible;width:100%;max-width:640px;margin:0 auto;max-height:none;padding:10px 12px 12px;border-top:.5px solid var(--dsw-alias-border-l3)}
 .dmc-hintText{color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:1.6}
 .dmc-release{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:2px;padding-top:8px;border-top:.5px solid var(--dsw-alias-border-l3)}
 .dmc-release .dmc-hintText{flex:1 1 140px;min-width:0}
@@ -1013,6 +1018,18 @@ window.__ModuleLoader__.load({
           }
         }
 
+        // 设备列表里的兜底解绑：绑定会话没了/卡住时，不用进那个会话也能松开。
+        const unbind = async (deviceId) => {
+          try {
+            const data = await post('/release', { deviceId })
+            // 宿主还是旧版时它对 {deviceId} 什么都不做，只回 ok——别再假装成功。
+            if (!data.released) throw new Error(t('unbind.noop'))
+            await refresh()
+          } catch (cause) {
+            setError(cause?.message ?? String(cause))
+          }
+        }
+
         /**
          * 添加工作区。优先让宿主弹一个 owner 指向当前窗口的对话框——宿主自带的
          * directoryPicker 是无 owner 的原生窗口，会被 DSH 主窗口压在下面。
@@ -1246,31 +1263,42 @@ window.__ModuleLoader__.load({
                               }${item.state === 'online' ? '' : ` · ${item.state}`}`,
                           ),
                         ),
-                        h(
-                          'button',
-                          {
-                            type: 'button',
-                            className:
-                              item.state === 'online' && item.claimedBy === 'free'
-                                ? 'dmc-btn primary'
-                                : 'dmc-btn',
-                            // 被别人占用时这颗按钮改成跳转：直接去那个会话里解绑更符合直觉
-                            onClick: () => {
-                              if (item.claimedBy === 'free') claim(item.id)
-                              else if (item.holderSessionId) {
-                                ctx.uiWorkspace.openSession(item.holderSessionId)
-                              }
-                            },
-                            disabled: item.state !== 'online' || item.claimedBy === 'me',
-                          },
-                          item.state !== 'online'
-                            ? t('claim.unavailable')
-                            : item.claimedBy === 'me'
-                              ? t('claim.done')
-                              : item.claimedBy === 'free'
-                                ? t('claim')
-                                : t('claim.goto'),
-                        ),
+                        item.claimedBy === 'free'
+                          ? h(
+                              'button',
+                              {
+                                type: 'button',
+                                className: item.state === 'online' ? 'dmc-btn primary' : 'dmc-btn',
+                                onClick: () => claim(item.id),
+                                disabled: item.state !== 'online',
+                              },
+                              item.state === 'online' ? t('claim') : t('claim.unavailable'),
+                            )
+                          : h(
+                              'div',
+                              { className: 'dmc-actions' },
+                              // 被别人占用时先给一颗跳转，绑定会话没了就地在列表里解绑。
+                              item.claimedBy === 'other' && item.holderSessionId
+                                ? h(
+                                    'button',
+                                    {
+                                      type: 'button',
+                                      className: 'dmc-btn',
+                                      onClick: () => ctx.uiWorkspace.openSession(item.holderSessionId),
+                                    },
+                                    t('claim.goto'),
+                                  )
+                                : null,
+                              h(
+                                'button',
+                                {
+                                  type: 'button',
+                                  className: 'dmc-btn',
+                                  onClick: () => unbind(item.id),
+                                },
+                                t('unbind'),
+                              ),
+                            ),
                       ),
                     ),
                   ),

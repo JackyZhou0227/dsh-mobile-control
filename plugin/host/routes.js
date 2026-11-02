@@ -237,10 +237,12 @@ async function dispatchBatch(ctx, registry, body) {
 
   await registry.refresh(true)
   // 选了工作区就以它为落点（产物留在那里）；没选则跟随发起会话的目录。
+  // session.create 只认 workspaceId 或 cwd 其一，两个都给会直接报错。
   const workspaceId = typeof body.workspaceId === 'string' ? body.workspaceId : undefined
-  const cwd =
-    (typeof body.workspacePath === 'string' ? body.workspacePath : undefined) ??
-    (await resolveCwd(ctx, body.sessionId))
+  const cwd = workspaceId
+    ? undefined
+    : (typeof body.workspacePath === 'string' ? body.workspacePath : undefined) ??
+      (await resolveCwd(ctx, body.sessionId))
 
   return Promise.all(
     deviceIds.map(async (deviceId) => {
@@ -315,8 +317,15 @@ async function handle(ctx, { registry, streams, base }, req, res) {
 
   if (route === '/release' && req.method === 'POST') {
     const body = await readJson(req)
-    const released = registry.release(body.sessionId ?? sessionId)
-    sendJson(res, 200, { ok: true, released: released ?? null, ...registry.view(body.sessionId) })
+    // deviceId 是设备列表里的兜底解绑：不关心是哪个会话持有的。
+    const released = body.deviceId
+      ? registry.releaseDevice(body.deviceId)
+      : registry.release(body.sessionId ?? sessionId)
+    sendJson(res, 200, {
+      ok: true,
+      released: released ?? null,
+      ...registry.view(body.sessionId ?? sessionId),
+    })
     return
   }
 

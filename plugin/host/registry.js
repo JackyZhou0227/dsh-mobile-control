@@ -52,8 +52,26 @@ export class Registry {
     return list.filter((adapter) => !this.broken.has(adapter.platform))
   }
 
+  /**
+   * 会话还能不能继续持有手机：会话被删掉、或被归档，就该自动解绑。
+   * 由插件在启动时注入（registry 不直接依赖 DSH 的 ctx）。
+   */
+  setSessionProbe(probe) {
+    this.sessionAlive = probe
+  }
+
+  /** 租约按会话存，会话没了租约也没意义——每次刷新顺手清一遍。 */
+  pruneSessions() {
+    if (typeof this.sessionAlive !== 'function') return
+    for (const sessionId of [...this.leases.keys()]) {
+      if (!this.sessionAlive(sessionId)) this.release(sessionId)
+    }
+  }
+
   /** 设备列表，2s 内复用；并发调用共享同一次枚举。 */
   async refresh(force = false) {
+    // 放在 TTL 之前：设备列表可以缓存，「会话还在不在」不缓存。
+    this.pruneSessions()
     if (!force && Date.now() - this.refreshedAt < REFRESH_TTL_MS) return this.devices
     if (this.pending) return this.pending
 
@@ -141,6 +159,14 @@ export class Registry {
 
   holderOf(deviceId) {
     return this.claims.get(deviceId)
+  }
+
+  /** 按设备解绑：不管是谁持有的，在设备列表里直接松开（会话卡死时的兜底）。 */
+  releaseDevice(deviceId) {
+    const sessionId = this.claims.get(deviceId)
+    if (sessionId === undefined) return undefined
+    this.release(sessionId)
+    return sessionId
   }
 
   /**
