@@ -27,12 +27,14 @@ import { FLAG_CONFIG, FLAG_KEY, FLAG_META, StreamManager, decodePacketHeader, en
     '<node class="android.widget.TextView" text="设置" bounds="[100,200][300,260]" clickable="true"/>' +
     '<node class="android.widget.ImageView" content-desc="返回" bounds="[0,60][80,140]" clickable="false"/>' +
     '<node class="android.view.View" bounds="[0,0][1,1]"/>' +
+    '<node class="android.widget.TextView" text="幽灵" bounds="[0,0][0,0]"/>' +
     '</node></hierarchy>'
   const { text, nodes } = compactUiTree(xml)
   assert.equal(nodes.length, 2)
   assert.deepEqual(nodes[0].center, { x: 200, y: 230 })
   assert.match(text, /设置/)
   assert.match(text, /desc="返回"/)
+  assert.doesNotMatch(text, /幽灵/)
   console.log('ok UI 树')
 }
 

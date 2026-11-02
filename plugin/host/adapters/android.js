@@ -28,10 +28,9 @@ function attr(source, name) {
 function centerOf(bounds) {
   const match = /\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]/.exec(bounds)
   if (!match) return undefined
-  return {
-    x: Math.round((Number(match[1]) + Number(match[3])) / 2),
-    y: Math.round((Number(match[2]) + Number(match[4])) / 2),
-  }
+  const [x1, y1, x2, y2] = match.slice(1, 5).map(Number)
+  if (x2 <= x1 || y2 <= y1) return undefined // 零尺寸=不在屏幕上，点它等于点 (0,0)
+  return { x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2) }
 }
 
 const MAX_UI_LINES = 400
