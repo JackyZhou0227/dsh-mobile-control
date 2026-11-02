@@ -22,6 +22,9 @@ pnpm-debug.log*
 .env.*
 !.env.example
 
+# 工具产物：Windows 沙箱 ACL 排查留下的备份/报告
+.acl-repair/
+
 # 缓存与构建产物
 .cache/
 .turbo/
