@@ -1,9 +1,13 @@
 {
-  "name": "@local/dsh-mobile-control",
+  "name": "@jackyzhou0227/dsh-mobile-control",
   "version": "0.1.0",
-  "private": true,
   "description": "从 DSH 会话操作 Android 手机，并在右侧栏实时投屏",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JackyZhou0227/dsh-mobile-control.git",
+    "directory": "plugin"
+  },
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",

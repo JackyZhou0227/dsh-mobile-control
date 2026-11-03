@@ -6,6 +6,14 @@
 
 ## 装
 
+发布版（推荐）：在 DSH 插件页点「添加插件」输入 `@jackyzhou0227/dsh-mobile-control`，或命令行：
+
+```bash
+dsh plugin add @jackyzhou0227/dsh-mobile-control
+```
+
+本地开发版：
+
 ```bash
 node plugin/scripts/fetch-vendor.mjs   # 下载 scrcpy-server 与 yadb 到 plugin/vendor/
 ```

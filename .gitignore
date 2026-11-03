@@ -25,6 +25,10 @@ pnpm-debug.log*
 # 工具产物：Windows 沙箱 ACL 排查留下的备份/报告
 .acl-repair/
 
+# 发包产物与凭证：npm pack 的 tarball、含 token 的本地 npm 配置
+*.tgz
+.npmrc
+
 # 缓存与构建产物
 .cache/
 .turbo/
