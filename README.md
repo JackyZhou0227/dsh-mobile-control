@@ -40,6 +40,12 @@ node plugin/scripts/fetch-vendor.mjs   # 下载 scrcpy-server 与 yadb 到 plugi
 | `mobile_ui` | 界面节点树（带点击坐标，部分机器一次要数秒） |
 | `mobile_action` | tap / swipe / type / key / launch / stop |
 
+## 发版
+
+1. 版本号只改 `plugin/package.json` 的 `version`，按 semver：修 bug 进位第三位，加功能进位第二位，破坏性改动才动第一位。
+2. 发包四步：改 version → `git commit` → `git tag v<x.y.z>` → `cd plugin && npm publish --access public`（账号开了 2FA 就加 `--otp=` 六位码）。
+3. `vendor/` 二进制（scrcpy-server / yadb）不进 git，但会进 npm 包；发包前确认它们在本地存在。只有升级 scrcpy/yadb 时才改 `scripts/fetch-vendor.mjs` 里的版本号。
+
 ## 平台
 
 - **Android**：完整实现，走 `adb` 命令行 + scrcpy 视频流。中文输入走 yadb。
