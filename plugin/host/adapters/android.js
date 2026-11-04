@@ -1,4 +1,5 @@
 import { run } from '../exec.js'
+import { Provisioner } from '../provision.js'
 import { requireVendor } from '../vendor.js'
 
 const KEY_CODES = {
@@ -66,19 +67,28 @@ export function compactUiTree(xml) {
 }
 
 export class AndroidAdapter {
-  constructor(config) {
+  constructor(config, provision) {
     this.platform = 'android'
-    this.adb = config.adbPath || 'adb'
+    this.provision = provision ?? new Provisioner(config)
     this.uiDumpTimeoutMs = config.uiDumpTimeoutMs ?? 20000
     this.yadbReady = new Set()
+    this.adbPath = null
   }
 
-  call(deviceId, args, timeout) {
-    return run(this.adb, ['-s', deviceId, ...args], { timeout })
+  /** adb 第一次真要用时才定下来：缺了就按需下载，之后复用。 */
+  async adb() {
+    if (!this.adbPath) this.adbPath = await this.provision.ensureAdb()
+    return this.adbPath
+  }
+
+  async call(deviceId, args, timeout) {
+    const adb = await this.adb()
+    return run(adb, ['-s', deviceId, ...args], { timeout })
   }
 
   async list() {
-    const output = (await run(this.adb, ['devices', '-l'], { timeout: 10000 })).toString('utf8')
+    const adb = await this.adb()
+    const output = (await run(adb, ['devices', '-l'], { timeout: 10000 })).toString('utf8')
     const devices = []
     for (const line of output.split(/\r?\n/)) {
       const match = /^(\S+)\s+(\S+)(.*)$/.exec(line.trim())
@@ -186,7 +196,7 @@ export class AndroidAdapter {
       .toString('utf8')
       .includes('yes')
     if (!present) {
-      await run(this.adb, ['-s', deviceId, 'push', requireVendor('yadb'), YADB_DEVICE_PATH])
+      await this.call(deviceId, ['push', requireVendor('yadb'), YADB_DEVICE_PATH], 60000)
     }
     this.yadbReady.add(deviceId)
   }

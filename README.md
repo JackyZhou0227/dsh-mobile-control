@@ -20,6 +20,11 @@ node plugin/scripts/fetch-vendor.mjs   # 下载 scrcpy-server 与 yadb 到 plugi
 
 然后在 DSH 里安装这个 bundle（`plugin_manager` 的 `install_bundle`，目标 `plugin/` 的绝对路径），**刷新一次页面**。
 
+电脑侧工具不用手动装：
+
+- **adb**：`adbPath` 留默认 `adb` 时，插件按 PATH → `ANDROID_HOME` / `ANDROID_SDK_ROOT` → 常见 SDK 目录 → 自己的缓存找；都没有就自动下载 Google 的 platform-tools（约 8 MB，首次用到时）到 `%LOCALAPPDATA%\dsh-mobile-control\platform-tools`（macOS 是 `~/Library/Caches/dsh-mobile-control`，Linux 是 `~/.cache/dsh-mobile-control`）。不想联网就把 `autoProvision` 设成 `false`。
+- **hdc**：没有便携发布物，只从 PATH 和 DevEco Studio 的 SDK 目录里探测；装在别处就在配置里填 `hdcPath`。
+
 安装后「工作模式」列表里会多一个「手机操作」：只挂手机任务需要的行（操作员人设、文件读写、shell、后台任务、待办、上下文压缩），`mobile_*` 工具本身在宿主层，任何模式都有。重启一次 DSH 后生效，批量下发任务时也能选它。
 
 ## 用
@@ -34,7 +39,7 @@ node plugin/scripts/fetch-vendor.mjs   # 下载 scrcpy-server 与 yadb 到 plugi
 
 | 工具 | 作用 |
 | --- | --- |
-| `mobile_devices` | 列出设备与占用状态 |
+| `mobile_devices` | 列出设备与占用状态（附带 adb/hdc 实际用了哪个文件） |
 | `mobile_use` / `mobile_release` | 认领 / 释放设备（会话 ↔ 设备 1:1） |
 | `mobile_screenshot` | 截屏（返回图片给模型看） |
 | `mobile_ui` | 界面节点树（带点击坐标，部分机器一次要数秒） |
@@ -48,8 +53,8 @@ node plugin/scripts/fetch-vendor.mjs   # 下载 scrcpy-server 与 yadb 到 plugi
 
 ## 平台
 
-- **Android**：完整实现，走 `adb` 命令行 + scrcpy 视频流。中文输入走 yadb。
-- **HarmonyOS**：`hdc` 适配器骨架（列表 / 截图 / 点击 / 滑动 / 按键）。
+- **Android**：完整实现，走 `adb` 命令行 + scrcpy 视频流。电脑侧 adb 自动查找、缺了自动下载；中文输入走 yadb。
+- **HarmonyOS**：`hdc` 适配器骨架（列表 / 截图 / 点击 / 滑动 / 按键），hdc 从 PATH / DevEco SDK 自动探测。
 - **iOS**：WebDriverAgent REST 适配器骨架，配 `wdaBaseUrl` 才启用，WDA 必须在 macOS 上跑。
 
 后两个本机没有环境和设备，**未实机验证**。
@@ -60,7 +65,8 @@ node plugin/scripts/fetch-vendor.mjs   # 下载 scrcpy-server 与 yadb 到 plugi
 
 | 键 | 默认 | 说明 |
 | --- | --- | --- |
-| `adbPath` / `hdcPath` | `adb` / `hdc` | 二进制路径 |
+| `adbPath` / `hdcPath` | `adb` / `hdc` | 二进制路径；留默认值就自动找（adb 找不到会自动下载） |
+| `autoProvision` | `true` | 缺 adb 时自动下载 platform-tools；关掉就只在 PATH/SDK 里找 |
 | `wdaBaseUrl` | 空 | 填了才启用 iOS |
 | `streamMaxFps` | 30 | 投屏帧率上限 |
 | `streamMaxSize` | 1024 | 投屏最长边像素 |
@@ -69,6 +75,7 @@ node plugin/scripts/fetch-vendor.mjs   # 下载 scrcpy-server 与 yadb 到 plugi
 ## 自检
 
 ```bash
+node plugin/test/provision.mjs # 纯离线：adb/hdc 路径解析与缺工具报错（不需要手机）
 node plugin/test/client.mjs    # 纯离线：注册了什么、DOM 结构、样式守卫（不需要手机）
 node plugin/test/routes.mjs    # HTTP 路由 + 租约互斥 + 批量下发 + 投屏流首包
 node plugin/test/android.mjs   # 帧格式 + 真机截图/点击/UI树 + scrcpy 视频流

@@ -4,6 +4,7 @@
       config:
         adbPath: adb
         hdcPath: hdc
+        autoProvision: true
         wdaBaseUrl: ''
         streamMaxFps: 30
         streamMaxSize: 1024

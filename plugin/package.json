@@ -1,6 +1,6 @@
 {
   "name": "@jackyzhou0227/dsh-mobile-control",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "从 DSH 会话操作 Android 手机，并在右侧栏实时投屏",
   "type": "module",
   "repository": {

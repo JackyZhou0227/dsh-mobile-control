@@ -1,6 +1,7 @@
 import { AndroidAdapter } from './adapters/android.js'
 import { HarmonyAdapter } from './adapters/harmony.js'
 import { IosAdapter } from './adapters/ios.js'
+import { Provisioner } from './provision.js'
 
 const REFRESH_TTL_MS = 2000
 // 系统版本、分辨率这类信息几乎不变，缓存久一点，别每 3 秒轮询都去 shell 一次。
@@ -15,10 +16,11 @@ const DETAIL_TTL_MS = 60000
  * - 租约只存在内存里，插件重载后重新认领即可。
  */
 export class Registry {
-  constructor(config) {
+  constructor(config, provision) {
     this.config = config
-    this.android = new AndroidAdapter(config)
-    this.harmony = new HarmonyAdapter(config)
+    this.provision = provision ?? new Provisioner(config)
+    this.android = new AndroidAdapter(config, this.provision)
+    this.harmony = new HarmonyAdapter(config, this.provision)
     this.ios = new IosAdapter(config)
     this.devices = new Map()
     this.errors = []
@@ -47,7 +49,8 @@ export class Registry {
 
   adapters() {
     const list = [this.android]
-    if (this.config.hdcPath) list.push(this.harmony)
+    // hdc 是探测出来的：没装 DevEco 的机器不挂鸿蒙适配器，省得每次刷新都报一条无意义的错误。
+    if (this.provision.hdcPath()) list.push(this.harmony)
     if (this.config.wdaBaseUrl) list.push(this.ios)
     return list.filter((adapter) => !this.broken.has(adapter.platform))
   }
@@ -218,6 +221,8 @@ export class Registry {
     return {
       lease: leased ?? null,
       errors: this.errors,
+      // adb / hdc 最终用的是哪个文件、缓存目录在哪，排错时一眼能看到。
+      provision: this.provision.describe(),
       devices: [...this.devices.values()].map((device) => {
         const holder = this.claims.get(device.id)
         return {

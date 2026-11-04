@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import { run } from './exec.js'
+import { Provisioner } from './provision.js'
 import { requireVendor } from './vendor.js'
 
 const SCRCPY_VERSION = '3.3.3'
@@ -90,10 +91,12 @@ function withTimeout(promise, ms, message) {
 }
 
 class Producer {
-  constructor(config, deviceId) {
+  constructor(config, provision, deviceId) {
     this.config = config
+    this.provision = provision
     this.deviceId = deviceId
-    this.adb = config.adbPath || 'adb'
+    // start() 里才定下来（可能要下载 platform-tools）。
+    this.adb = null
     this.subscribers = new Set()
     this.closed = false
     this.seq = 0
@@ -112,6 +115,7 @@ class Producer {
 
   async start() {
     const jar = requireVendor('scrcpy-server')
+    this.adb = await this.provision.ensureAdb()
     await run(this.adb, ['-s', this.deviceId, 'push', jar, DEVICE_JAR_PATH], { timeout: 60000 })
 
     this.listener = await listenForDevice()
@@ -258,22 +262,23 @@ class Producer {
     try {
       this.serverChild?.kill('SIGKILL')
     } catch {}
-    if (this.port !== null) {
+    if (this.port !== null && this.adb) {
       run(this.adb, ['-s', this.deviceId, 'reverse', '--remove', SOCKET_NAME]).catch(() => {})
     }
   }
 }
 
 export class StreamManager {
-  constructor(config) {
+  constructor(config, provision) {
     this.config = config
+    this.provision = provision ?? new Provisioner(config)
     this.producers = new Map()
   }
 
   async ensure(deviceId) {
     const existing = this.producers.get(deviceId)
     if (existing && !existing.closed) return existing
-    const producer = new Producer(this.config, deviceId)
+    const producer = new Producer(this.config, this.provision, deviceId)
     this.producers.set(deviceId, producer)
     try {
       await producer.start()

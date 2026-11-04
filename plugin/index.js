@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { Provisioner } from './host/provision.js'
 import { Registry } from './host/registry.js'
 import { StreamManager } from './host/scrcpy.js'
 import { registerRoutes } from './host/routes.js'
@@ -7,6 +8,8 @@ import { registerTools } from './host/tools.js'
 const DEFAULTS = {
   adbPath: 'adb',
   hdcPath: 'hdc',
+  // 缺 adb 时自动下载 platform-tools 到用户缓存目录；设成 false 就只按配置/PATH 找。
+  autoProvision: true,
   wdaBaseUrl: '',
   streamMaxFps: 30,
   streamMaxSize: 1024,
@@ -28,8 +31,9 @@ export function sessionAliveProbe(ctx) {
 
 export function apply(ctx, config) {
   const resolved = { ...DEFAULTS, ...(config ?? {}) }
-  const registry = new Registry(resolved)
-  const streams = new StreamManager(resolved)
+  const provision = new Provisioner(resolved)
+  const registry = new Registry(resolved, provision)
+  const streams = new StreamManager(resolved, provision)
 
   registry.setSessionProbe(sessionAliveProbe(ctx))
 

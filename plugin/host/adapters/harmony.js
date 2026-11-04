@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { run } from '../exec.js'
+import { Provisioner } from '../provision.js'
 
 const REMOTE_SHOT = '/data/local/tmp/dsh-mobile-shot.jpeg'
 const UNSUPPORTED = '鸿蒙适配器目前只实现了列出设备 / 截图 / 点击 / 滑动 / 按键。'
@@ -12,17 +13,29 @@ const UNSUPPORTED = '鸿蒙适配器目前只实现了列出设备 / 截图 / �
  * 本机没装 hdc，未实机验证。
  */
 export class HarmonyAdapter {
-  constructor(config) {
+  constructor(config, provision) {
     this.platform = 'harmony'
-    this.hdc = config.hdcPath || 'hdc'
+    this.provision = provision ?? new Provisioner(config)
+  }
+
+  /** hdc 没有便携发布物，只从 PATH / DevEco SDK 里探测。 */
+  hdc() {
+    const found = this.provision.hdcPath()
+    if (!found) {
+      throw new Error(
+        '找不到 hdc：PATH 和 DevEco Studio 的 SDK 目录里都没有。' +
+          '装好 DevEco Studio 后一般能自动找到；装在别处就在插件配置里设置 hdcPath。',
+      )
+    }
+    return found
   }
 
   call(deviceId, args, timeout) {
-    return run(this.hdc, ['-t', deviceId, ...args], { timeout })
+    return run(this.hdc(), ['-t', deviceId, ...args], { timeout })
   }
 
   async list() {
-    const output = (await run(this.hdc, ['list', 'targets'], { timeout: 10000 })).toString('utf8')
+    const output = (await run(this.hdc(), ['list', 'targets'], { timeout: 10000 })).toString('utf8')
     return output
       .split(/\r?\n/)
       .map((line) => line.trim())
