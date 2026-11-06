@@ -221,7 +221,7 @@ async function applySessionOptions(ctx, sessionId, body) {
   if (permission) {
     const presets = ctx.get('permissionPresets')
     const session = ctx.get('sessions')?.get(sessionId)
-    if (!presets || !session) throw new Error('当前 profile 没有权限预设服务，无法应用权限设置。')
+    if (!presets || !session) throw new Error('当前配置不支持权限预设，因此无法应用权限设置。')
     presets.set(session, permission)
   }
 }
@@ -229,11 +229,11 @@ async function applySessionOptions(ctx, sessionId, body) {
 async function dispatchBatch(ctx, registry, body) {
   const deviceIds = Array.isArray(body?.deviceIds) ? body.deviceIds : []
   const prompt = String(body?.prompt ?? '').trim()
-  if (!prompt) throw new Error('提示词不能为空。')
-  if (deviceIds.length === 0) throw new Error('至少选一台设备。')
+  if (!prompt) throw new Error('任务内容不能为空。')
+  if (deviceIds.length === 0) throw new Error('请至少选择一台设备。')
 
   const sessions = ctx.get('sessionController')
-  if (!sessions) throw new Error('当前 profile 没有 sessionController，无法下发任务。')
+  if (!sessions) throw new Error('当前配置不支持会话创建，因此无法下发任务。')
 
   await registry.refresh(true)
   // 选了工作区就以它为落点（产物留在那里）；没选则跟随发起会话的目录。
@@ -291,7 +291,7 @@ async function handle(ctx, { registry, streams, base }, req, res) {
     await registry.refresh()
     const device = registry.devices.get(deviceId)
     if (!device) {
-      sendJson(res, 404, { ok: false, error: `没有找到设备 ${deviceId}。` })
+      sendJson(res, 404, { ok: false, error: `未找到设备 ${deviceId}。` })
       return
     }
     const restart = url.searchParams.get('restart') === '1'

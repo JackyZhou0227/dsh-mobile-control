@@ -87,7 +87,7 @@ export class IosAdapter {
   async key(_deviceId, name) {
     const sid = await this.session()
     if (name === 'back') {
-      throw new Error('iOS 没有系统返回键，用滑动返回或点页面上的返回按钮。')
+      throw new Error('iOS 不提供系统返回键，请通过滑动手势或页面返回按钮返回。')
     }
     const names = { home: 'home', power: 'lock', volumeUp: 'volumeUp', volumeDown: 'volumeDown' }
     const button = names[name]

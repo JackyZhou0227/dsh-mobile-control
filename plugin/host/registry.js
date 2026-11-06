@@ -130,20 +130,20 @@ export class Registry {
 
   claim(deviceId, sessionId) {
     const device = this.devices.get(deviceId)
-    if (!device) throw new Error(`没有找到设备 ${deviceId}。用 mobile_devices 看当前可用设备。`)
-    if (device.state !== 'online') throw new Error(`设备 ${deviceId} 状态是 ${device.state}，还不能操作。`)
+    if (!device) throw new Error(`未找到设备 ${deviceId}。请先调用 mobile_devices 查看当前可用设备。`)
+    if (device.state !== 'online') throw new Error(`设备 ${deviceId} 当前状态为 ${device.state}，暂不可操作。`)
 
     const holder = this.claims.get(deviceId)
     if (holder && holder !== sessionId) {
       throw new Error(
-        `设备 ${deviceId} 正被另一个会话占用。同一台手机一次只能一个会话操作，先让那个会话解绑。`,
+        `设备 ${deviceId} 正由其他会话占用。同一设备同一时间只能由一个会话操作，请先由该会话释放设备。`,
       )
     }
 
     const leased = this.leases.get(sessionId)
     if (leased && leased !== deviceId) {
       throw new Error(
-        `本会话已持有设备 ${leased}。一个会话只能操作一台手机，先 mobile_release 再换。`,
+        `当前会话已持有设备 ${leased}。一个会话只能操作一台设备；请先调用 mobile_release，再切换设备。`,
       )
     }
 
@@ -177,7 +177,7 @@ export class Registry {
    * 显式 deviceId → 必须是它；省略 → 用租约，没有租约就认领唯一空闲设备。
    */
   async resolve(sessionId, deviceId) {
-    if (!sessionId) throw new Error('这个操作只能从会话里发起。')
+    if (!sessionId) throw new Error('该操作只能在会话中执行。')
     await this.refresh()
 
     if (deviceId) {
@@ -203,8 +203,8 @@ export class Registry {
         .join('、')
       throw new Error(
         listed
-          ? `没有空闲设备可认领，当前设备：${listed}。`
-          : '没有检测到设备。检查 USB 连接、USB 调试授权，或运行 adb devices 确认。',
+          ? `当前没有可认领的空闲设备，设备状态：${listed}。`
+          : '未检测到设备。请检查 USB 连接和 USB 调试授权，或运行 adb devices 进行确认。',
       )
     }
     if (free.length > 1) {

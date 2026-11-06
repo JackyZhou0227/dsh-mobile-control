@@ -4,6 +4,13 @@ import { readFileSync } from 'node:fs'
 // client.js 是给浏览器模块表用的：用一个最小 window 抓住 factory 再手动跑 apply，
 // 这样不用真的开浏览器也能验证「注册了什么」。
 let loaded
+let fetchResponse
+const fetchCalls = []
+globalThis.fetch = async (url) => {
+  fetchCalls.push(String(url))
+  const data = String(url).includes('/state?') ? fetchResponse : { ok: true }
+  return { ok: true, json: async () => data }
+}
 globalThis.window = {
   __ModuleLoader__: {
     load(module) {
@@ -12,14 +19,21 @@ globalThis.window = {
   },
 }
 
+let hookStates = []
+let hookCursor = 0
 const react = {
   // 不渲染 DOM，只把元素树记下来，好在 node 里断言结构。
   createElement: (type, props, ...children) => ({ type, props: props ?? {}, children }),
   useCallback: (fn) => fn,
+  useRef: () => ({ current: null }),
+  useState: (initial) => {
+    const index = hookCursor++
+    if (!(index in hookStates)) hookStates[index] = typeof initial === 'function' ? initial() : initial
+    return [hookStates[index], (next) => {
+      hookStates[index] = typeof next === 'function' ? next(hookStates[index]) : next
+    }]
+  },
   useEffect: () => {},
-  useRef: () => ({}),
-  // 和 React 一致：函数初始值当惰性初始化调用一次。
-  useState: (value) => [typeof value === 'function' ? value() : value, () => {}],
 }
 const require = (name) => (name === 'react' ? react : {})
 
@@ -152,11 +166,11 @@ assert.match(css, /\.dmc-root button,\.dmc-root input,\.dmc-root textarea\{font-
 // head 横跨、main 在左、foot 在右（grid 时）
 const foot = byClass(shell, 'dmc-foot')[0]
 const footClasses = foot.children.filter(Boolean).map((child) => child.props?.className)
-// 未认领时底栏只有两级标题 + 下发表单，没有状态行
-assert.deepEqual(footClasses, ['dmc-info', 'dmc-h2', 'dmc-form'])
+// 未认领时底栏只有批量标题 + 下发表单，没有认领态控制或状态区
+assert.deepEqual(footClasses, ['dmc-h2', 'dmc-form'])
 
-// 检查器列：设备 / 系统 / 分辨率 / 连接 / 序列号 五行
-assert.equal(byClass(shell, 'dmc-kv').length, 5, '检查器缺设备信息行')
+// 未认领态不显示设备详情；认领态字段由 adapter 数据按需生成。
+assert.equal(byClass(shell, 'dmc-deviceDetails').length, 0, '未认领页不应显示设备详情')
 
 // 批量表单：composer 形态（文本区 + 芯片栏 + 圆形发送键）
 const formTree = byClass(shell, 'dmc-form')[0]
@@ -181,6 +195,66 @@ assert.equal(byClass(shell, 'dmc-section').length, 0, '「批量下发」小标�
 assert.equal(byClass(shell, 'dmc-canvas').length, 0)
 assert.equal(byClass(shell, 'dmc-holder').length, 0)
 
+// 已认领设备详情消费 adapter 可提供的全部字段，并按字段可用性省略空行。
+const clientSource = readFileSync(new URL('../client.js', import.meta.url), 'utf8')
+for (const field of ['platform', 'brand', 'sdk', 'width', 'height', 'density', 'connection', 'id']) {
+  assert.match(clientSource, new RegExp(`device\\?\\.${field}|device\\.${field}`), `详情未读取 ${field}`)
+}
+assert.match(clientSource, /osVersion \?\? ''/, '系统详情未读取系统版本')
+assert.match(clientSource, /function kv|const kv\s*=\s*\(/, '缺少设备详情行 helper')
+assert.match(clientSource, /value\s*===\s*undefined/, '详情行应省略不可用字段')
+
+// 打开状态请求，只执行 refresh effect，避免启动投屏轮询和定时器。
+fetchResponse = {
+  ok: true,
+  lease: 'android-serial-1',
+  devices: [{
+    id: 'android-serial-1', platform: 'android', model: 'Pixel 9', brand: 'Google',
+    os: 'Android', osVersion: '16', sdk: 36, width: 1080, height: 2400,
+    density: 420, connection: 'usb', state: 'online',
+  }],
+}
+hookStates = [fetchResponse, '', { phase: 'playing', width: 456, height: 1024 }]
+hookCursor = 0
+const claimedTree = body.component({ sessionId: 'session-1' })
+const claimedShell = byClass(claimedTree, 'dmc-root')[0]
+assert.equal(claimedShell.props.className, 'dmc-root')
+const claimedFoot = byClass(claimedShell, 'dmc-foot')[0]
+const claimedChildren = claimedFoot.children.filter(Boolean)
+const claimedClasses = claimedChildren.map((child) => child.props?.className)
+assert.deepEqual(claimedClasses, ['dmc-sessionControl', 'dmc-status', 'dmc-deviceDetails'])
+const detailRows = byClass(claimedFoot, 'dmc-detailRow')
+const detailText = (row) => row.children.map((child) => child.children?.join('') ?? '').join(' ')
+const renderedDetails = detailRows.map(detailText).join('\n')
+for (const expected of ['ANDROID', 'Pixel 9', 'Android 16', 'Google', '36', '1080×2400', '420 dpi', 'USB', 'android-serial-1']) {
+  assert.ok(renderedDetails.includes(expected), `认领设备详情缺少 ${expected}`)
+}
+assert.equal(byClass(claimedFoot, 'dmc-release').length, 0, '认领态解绑操作不应保留在底部区块')
+
+// 缺少适配器字段时不渲染空详情行。
+fetchResponse = {
+  ok: true,
+  lease: 'ios-wda',
+  devices: [{ id: 'ios-wda', platform: 'ios', model: 'iPhone', os: 'iOS' }],
+}
+hookStates = [fetchResponse, '', { phase: 'playing', width: 456, height: 1024 }]
+hookCursor = 0
+const sparseTree = body.component({ sessionId: 'session-1' })
+const sparseRows = byClass(sparseTree, 'dmc-detailRow')
+const sparseDetails = sparseRows.map(detailText).join('\n')
+assert.ok(sparseDetails.includes('iPhone'))
+assert.ok(!sparseDetails.includes('undefined') && !sparseDetails.includes('—'))
+assert.equal(sparseRows.length, 4, '应显示平台、设备、系统和连接方式字段')
+
+// 响应式行为按右侧详情容器宽度分级，而非整个宿主宽度。
+assert.match(css, /\.dmc-deviceDetails\{[^}]*display:none/, '窄栏应隐藏全部设备详情')
+assert.match(css, /@container \(min-width:620px\)[\s\S]*?\.dmc-foot \.dmc-deviceDetails\{display:flex\}/, '展开右栏应显示完整设备详情')
+assert.doesNotMatch(css, /secondaryPriority|lowPriority/, '详情不应按字段优先级分批显示')
+assert.match(clientSource, /kv\(t\('info\.serial'\), device\.id\)/, '完整详情应包含设备 ID')
+assert.match(clientSource, /kv\(t\('info\.connection'\), device\.connection\?\.toUpperCase\(\)\)/, '完整详情应包含连接方式')
+assert.match(css, /\.dmc-sessionControl\{[^}]*flex-direction:column/, '窄栏会话控制应纵向排列')
+assert.match(css, /@container \(max-width:619px\)[\s\S]*?\.dmc-root:not\(\.idle\) \.dmc-main\{[^}]*order:2/, '窄屏下主画布应排在顶部会话控制之后')
+
 // idle 页在宽布局里必须显式写回 display:flex —— 否则会被 .dmc-root 的 grid 拽成左右两列
 assert.match(css, /\.dmc-root\.idle\{display:flex/, 'idle 页在宽布局里必须保持单栏')
 // 宽度/留白必须在基础规则里：只写在容器查询里，窄一点就变成满宽、只剩 10px 内边距
@@ -191,5 +265,5 @@ assert.match(
 )
 
 console.log('ok client 注册：locale / tab type / body / title')
-console.log('ok client 结构：main / foot(info,status,batch) / 字族继承')
+console.log('ok client 结构：idle 页 + claimed 控制 / 状态 / 详情顺序 / 字族继承')
 

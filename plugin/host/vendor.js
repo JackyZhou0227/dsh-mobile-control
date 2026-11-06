@@ -11,7 +11,7 @@ export function requireVendor(name) {
   const path = vendorPath(name)
   if (!existsSync(path)) {
     throw new Error(
-      `缺少 ${name}。在插件目录执行 \`node scripts/fetch-vendor.mjs\` 下载后再试。`,
+      `缺少 ${name}。请在插件目录执行 \`node scripts/fetch-vendor.mjs\` 下载该文件后重试。`,
     )
   }
   return path

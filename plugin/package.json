@@ -1,7 +1,7 @@
 {
   "name": "@jackyzhou0227/dsh-mobile-control",
   "version": "0.2.0",
-  "description": "从 DSH 会话操作 Android 手机，并在右侧栏实时投屏",
+  "description": "通过 DSH 会话操作 Android、HarmonyOS 和 iOS 设备，并在右侧栏实时投屏",
   "type": "module",
   "repository": {
     "type": "git",

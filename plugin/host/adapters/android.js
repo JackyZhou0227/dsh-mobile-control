@@ -211,7 +211,7 @@ export class AndroidAdapter {
 
   async launch(deviceId, target) {
     if (!/^[A-Za-z][\w.]*$/.test(target)) {
-      throw new Error(`launch 需要包名（例如 com.android.settings），收到：${target}`)
+      throw new Error(`launch 操作需要应用包名（例如 com.android.settings），当前值为：${target}`)
     }
     await this.call(deviceId, [
       'shell',
@@ -221,7 +221,7 @@ export class AndroidAdapter {
 
   async stop(deviceId, target) {
     if (!/^[A-Za-z][\w.]*$/.test(target)) {
-      throw new Error(`stop 需要包名，收到：${target}`)
+      throw new Error(`stop 操作需要应用包名，当前值为：${target}`)
     }
     await this.call(deviceId, ['shell', `am force-stop ${target}`])
   }
@@ -236,7 +236,7 @@ export class AndroidAdapter {
     }
     const xml = (await this.call(deviceId, ['exec-out', `cat ${remote}`])).toString('utf8')
     this.call(deviceId, ['shell', `rm -f ${remote}`]).catch(() => {})
-    if (!xml.includes('<hierarchy')) throw new Error('UI 树读取失败：没有拿到 hierarchy')
+    if (!xml.includes('<hierarchy')) throw new Error('UI 树读取失败：未获取到 hierarchy 数据')
     return compactUiTree(xml)
   }
 }

@@ -141,7 +141,7 @@ try {
     body: JSON.stringify({ deviceId, sessionId: 'session-B' }),
   })
   assert.equal(stolen.status, 500)
-  assert.match(stolen.body.error, /正被另一个会话占用/)
+  assert.match(stolen.body.error, /由其他会话占用/)
 
   // 别的会话看到的视图：只标「被占用」+ 完整持有者 id（客户端用它跳转）
   const asOther = await json('/state?sessionId=session-B')

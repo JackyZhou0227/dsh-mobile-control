@@ -17,34 +17,34 @@ window.__ModuleLoader__.load({
     const zh = {
       'type.label': '手机控制',
       'guide.title': '手机控制',
-      'guide.description': '连接手机并实时投屏',
-      rebooting: '插件已重新加载，刷新页面后再试。',
-      'devices.empty': '没有检测到手机。插上 USB、打开 USB 调试并授权后重试。',
+      'guide.description': '连接设备并实时投屏',
+      rebooting: '插件已重新加载，请刷新页面后重试。',
+      'devices.empty': '未检测到设备。请连接 USB、启用 USB 调试并完成授权后重试。',
       claim: '认领',
       release: '解绑会话',
-      'lease.hint': '这个会话的 agent 正在操作这台手机，直接让它做事就行。',
+      'lease.hint': '当前会话的 agent 正在操作此设备，请直接向其下达操作指令。',
       refresh: '刷新',
       'state.loading': '读取设备信息…',
       'state.failed': '读取失败',
       'mirror.waiting': '正在连接投屏',
       'mirror.playing': '实时投屏',
-      'mirror.retry': '投屏断开，正在重连',
+      'mirror.retry': '投屏连接已断开，正在重新连接',
       'mirror.failed': '投屏不可用',
       'mirror.retryAction': '重试',
-      'mirror.sizeHint': '这是投屏流的尺寸（scrcpy 按 streamMaxSize 缩放），不是手机屏幕分辨率。',
+      'mirror.sizeHint': '投屏流尺寸（scrcpy 按 streamMaxSize 缩放），不代表设备屏幕分辨率。',
       'batch.title': '批量下发任务',
       'devices.title': '设备',
-      'batch.placeholder': '给选中的手机统一下发的任务，例如：打开设置，把屏幕亮度调到最高。',
+      'batch.placeholder': '向选中的设备统一下发任务，例如：打开“设置”，将屏幕亮度调至最高。',
       'batch.submit': '下发',
       'batch.running': '下发中…',
       'batch.empty': '至少选一台设备。',
-      'batch.promptEmpty': '提示词不能为空。',
+      'batch.promptEmpty': '任务内容不能为空。',
       'batch.result': '结果',
       'batch.open': '打开',
       'batch.failed': '失败',
       'batch.pick': '设备',
       'batch.selectAll': '全选',
-      'batch.clearAll': '全不选',
+      'batch.clearAll': '取消全选',
       'opt.preset': '工作模式',
       'opt.permission': '权限',
       'opt.model': '模型',
@@ -58,14 +58,18 @@ window.__ModuleLoader__.load({
       'perm.read-only': '只读',
       'perm.workspace-write': '工作区内修改',
       'perm.danger-full-access': '完全访问',
+      'info.platform': '平台',
       'info.device': '设备',
       'info.os': '系统',
       'info.screen': '分辨率',
       'info.connection': '连接',
-      'info.serial': '序列号',
+      'info.serial': '设备 ID',
+      'info.brand': '品牌',
+      'info.sdk': 'SDK 版本',
+      'info.density': '屏幕密度',
       splitter: '拖动调整左右宽度',
-      'idle.hint': '认领后这个会话的 agent 就能操作这台手机；一台手机同时只归一个会话。',
-      'batch.plan': '将新建 {count} 个会话，每台设备一个，同时开始跑。',
+      'idle.hint': '认领后，当前会话的 agent 即可操作此设备；一台设备同一时间只能由一个会话使用。',
+      'batch.plan': '将为每台设备创建一个会话，共 {count} 个，并同时开始执行。',
       'claimed.me': '本会话在用',
       'claimed.free': '空闲',
       'claimed.other': '被占用',
@@ -74,7 +78,7 @@ window.__ModuleLoader__.load({
       'claim.goto': '前往绑定会话',
       'claim.unavailable': '不可用',
       unbind: '解绑',
-      'unbind.noop': '解绑没生效，宿主可能还是旧版；重载插件后再试。',
+      'unbind.noop': '解绑未生效，宿主可能尚未更新。请重新加载插件后重试。',
     }
 
     const en = {
@@ -121,11 +125,15 @@ window.__ModuleLoader__.load({
       'perm.read-only': 'Read-only',
       'perm.workspace-write': 'Workspace write',
       'perm.danger-full-access': 'Full access',
+      'info.platform': 'Platform',
       'info.device': 'Device',
       'info.os': 'OS',
       'info.screen': 'Screen',
       'info.connection': 'Link',
-      'info.serial': 'Serial',
+      'info.serial': 'Device ID',
+      'info.brand': 'Brand',
+      'info.sdk': 'SDK',
+      'info.density': 'Density',
       splitter: 'Drag to resize panes',
       'idle.hint': 'Once claimed, this session drives that phone. One phone belongs to one session at a time.',
       'batch.plan': 'Creates {count} session(s), one per device, running together.',
@@ -189,8 +197,13 @@ window.__ModuleLoader__.load({
 .dmc-dot.bad{background:var(--dsw-alias-state-error-primary)}
 .dmc-info{display:none;flex-direction:column;gap:4px;padding-bottom:4px}
 .dmc-kv{display:flex;gap:8px;font-size:11px;line-height:1.6}
-.dmc-kv b{flex:none;width:40px;font-weight:400;color:var(--dsw-alias-label-tertiary)}
+.dmc-kv b{flex:none;width:64px;font-weight:400;color:var(--dsw-alias-label-tertiary)}
 .dmc-kv span{flex:1 1 auto;min-width:0;color:var(--dsw-alias-label-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dmc-deviceDetails{display:none;flex-direction:column;gap:4px;padding:8px 0;border-top:.5px solid var(--dsw-alias-border-l3)}
+.dmc-sessionControl{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.dmc-sessionControl .dmc-hintText{min-width:0}
+.dmc-sessionControl .dmc-btn{align-self:flex-start}
+
 .dmc-h2{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--dsw-alias-label-primary)}
 /* 一级标题前的一小段品牌色，只做层次提示，不做装饰 */
 .dmc-h2::before{content:'';flex:none;width:3px;height:12px;border-radius:2px;background:var(--dmc-accent);opacity:.85}
@@ -238,11 +251,14 @@ window.__ModuleLoader__.load({
 .dmc-root.idle .dmc-list{flex:0 0 auto;overflow:visible}
 .dmc-root.idle .dmc-foot{box-sizing:border-box;flex:0 0 auto;overflow:visible;width:100%;max-width:640px;margin:0 auto;max-height:none;padding:10px 12px 12px;border-top:.5px solid var(--dsw-alias-border-l3)}
 .dmc-hintText{color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:1.6}
-.dmc-release{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:2px;padding-top:8px;border-top:.5px solid var(--dsw-alias-border-l3)}
-.dmc-release .dmc-hintText{flex:1 1 140px;min-width:0}
 .dmc-badge{flex:none;padding:1px 6px;border-radius:999px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:1.7}
 .dmc-titleRow{display:flex;align-items:center;gap:6px;min-width:0}
 /* 侧栏宽度和窗口宽度无关，只能问容器自己：够宽就把控制面板挪到右边一列，别让竖屏手机两边空着。 */
+@container (max-width:619px){
+  .dmc-root:not(.idle) .dmc-foot{order:1;max-height:none;border-top:0;padding:8px 12px}
+  .dmc-root:not(.idle) .dmc-main{order:2;flex:1 1 auto;min-height:0}
+  .dmc-root:not(.idle) .dmc-stage{max-height:calc(100vh - 260px)}
+}
 @container (min-width:620px){
   .dmc-root{display:grid;grid-template-rows:minmax(0,1fr)}
   .dmc-main{grid-area:1/1;padding:10px}
@@ -253,8 +269,7 @@ window.__ModuleLoader__.load({
   .dmc-resizer:focus-visible{outline:none}
   .dmc-resizer:focus-visible::before{background:var(--dmc-accent)}
   .dmc-foot{grid-area:1/3;max-height:none;padding:10px 12px;border-top:0}
-  /* 已认领时右栏内容少：把「解绑会话」压到底部，上信息下动作，不留一块空白在中间。 */
-  .dmc-root:not(.idle) .dmc-release{margin-top:auto}
+  .dmc-foot .dmc-deviceDetails{display:flex}
   /* 侧栏窄的时候标题栏已经有「手机 · PESM10」，这块只在宽布局里当检查器用。 */
   .dmc-info{display:flex}
   /* 没认领设备时是另一张页面：单栏的设备列表 + 下发入口，不是左右分栏。 */
@@ -1084,8 +1099,17 @@ window.__ModuleLoader__.load({
             .filter(Boolean)
             .join(' · ')
 
-        const kv = (name, value) =>
-          h('div', { className: 'dmc-kv' }, h('b', null, name), h('span', null, value ?? '—'))
+        const kv = (name, value, priority = 'core') => {
+          if (value === undefined || value === null || value === '' || value === '—') return null
+          return h(
+            'div',
+            {
+              className: `dmc-kv dmc-detailRow ${priority === 'low' ? 'lowPriority' : priority === 'secondary' ? 'secondaryPriority' : ''}`,
+            },
+            h('b', null, name),
+            h('span', null, value),
+          )
+        }
 
         const presetEntries = (options?.presets ?? []).map((item) => ({
           value: item.id,
@@ -1346,18 +1370,19 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'dmc-foot' },
-            h(
-              'div',
-              { className: 'dmc-info' },
-              kv(t('info.device'), device?.model),
-              kv(t('info.os'), device ? osLabel(device) : undefined),
-              kv(
-                t('info.screen'),
-                device?.width && device?.height ? `${device.width}×${device.height}` : undefined,
-              ),
-              kv(t('info.connection'), device?.connection ? device.connection.toUpperCase() : undefined),
-              kv(t('info.serial'), device?.id),
-            ),
+            lease
+              ? h(
+                  'div',
+                  { className: 'dmc-sessionControl' },
+                  h('div', { className: 'dmc-hintText' }, t('lease.hint')),
+                  h(
+                    'button',
+                    { type: 'button', className: 'dmc-btn', onClick: release },
+                    t('release'),
+                  ),
+                )
+              : null,
+
             lease
               ? h(
                   'div',
@@ -1385,16 +1410,22 @@ window.__ModuleLoader__.load({
                 )
               : null,
 
-            lease
+            lease && device
               ? h(
                   'div',
-                  { className: 'dmc-release' },
-                  h('div', { className: 'dmc-hintText' }, t('lease.hint')),
-                  h(
-                    'button',
-                    { type: 'button', className: 'dmc-btn', onClick: release },
-                    t('release'),
+                  { className: 'dmc-deviceDetails' },
+                  kv(t('info.platform'), device.platform?.toUpperCase()),
+                  kv(t('info.device'), device.model),
+                  kv(t('info.os'), device ? osLabel(device) : undefined),
+                  kv(t('info.brand'), device.brand),
+                  kv(t('info.sdk'), device.sdk),
+                  kv(
+                    t('info.screen'),
+                    device.width && device.height ? `${device.width}×${device.height}` : undefined,
                   ),
+                  kv(t('info.density'), device.density ? `${device.density} dpi` : undefined),
+                  kv(t('info.connection'), device.connection?.toUpperCase()),
+                  kv(t('info.serial'), device.id),
                 )
               : null,
 

@@ -18,7 +18,7 @@ function textOutput(schema) {
 
 const DEVICE_ID = {
   type: 'string',
-  description: '设备 id（adb serial）。省略时用本会话已认领的设备，没有就认领唯一的空闲设备。',
+  description: '设备 id（adb serial）。省略时使用当前会话已认领的设备；若未认领且仅有一台空闲设备，则自动认领该设备。',
 }
 
 /** 在 UI 树里按文字找可点的节点；精确匹配优先，其次取第一个可点的包含匹配。 */
@@ -41,7 +41,7 @@ export function registerTools(ctx, { registry }) {
   tools.push({
     name: 'mobile_devices',
     description:
-      '列出当前接上的手机及占用情况。claimedBy 是 free 表示空闲可认领，me 表示本会话已占用，其它值是别的会话在占用。',
+      '列出当前已连接的设备及占用状态。claimedBy 为 free 表示可认领，me 表示当前会话已占用，其它值表示由其他会话占用。',
     parameters: { type: 'object', properties: {} },
     output: textOutput({ type: 'object' }),
     isConcurrencySafe: () => true,
@@ -55,7 +55,7 @@ export function registerTools(ctx, { registry }) {
   tools.push({
     name: 'mobile_use',
     description:
-      '认领一台手机给当前会话。一台手机同时只能被一个会话操作。只接一台手机时可以省略 deviceId。',
+      '将一台设备分配给当前会话。同一设备同一时间只能由一个会话操作。仅连接一台设备时可省略 deviceId。',
     parameters: {
       type: 'object',
       properties: { deviceId: DEVICE_ID },
@@ -69,7 +69,7 @@ export function registerTools(ctx, { registry }) {
 
   tools.push({
     name: 'mobile_release',
-    description: '释放当前会话占用的手机，让别的会话可以认领它。',
+    description: '释放当前会话占用的设备，使其他会话可以认领该设备。',
     parameters: { type: 'object', properties: {} },
     output: textOutput({ type: 'object' }),
     async execute(_args, exec) {
@@ -81,7 +81,7 @@ export function registerTools(ctx, { registry }) {
   tools.push({
     name: 'mobile_screenshot',
     description:
-      '截取当前手机屏幕并返回图片。动手之前先截图看一眼；每一步操作之后再截一次确认结果。',
+      '截取并返回当前设备的屏幕图像。执行操作前后均应截图，以确认当前界面和操作结果。',
     parameters: {
       type: 'object',
       properties: { deviceId: DEVICE_ID },
@@ -110,7 +110,7 @@ export function registerTools(ctx, { registry }) {
   tools.push({
     name: 'mobile_ui',
     description:
-      '读取当前界面的可操作节点列表（文字、描述、点击坐标），比截图更适合找精确坐标。注意：在部分机器上一次要数秒。',
+      '读取当前界面的可操作节点列表（文本、描述和点击坐标），适合进行精确定位。部分设备的读取操作可能耗时数秒。',
     parameters: {
       type: 'object',
       properties: { deviceId: DEVICE_ID },
@@ -129,12 +129,12 @@ export function registerTools(ctx, { registry }) {
     name: 'mobile_action',
     description: [
       '操作手机。action 取值：',
-      'tap（点按：给 x/y，或给 text 按界面文字定位）、',
-      'swipe（给 fromX/fromY/toX/toY，可选 durationMs）、',
-      'type（给 text 输入文字，先点中输入框）、',
-      `key（给 key，取值 ${KEY_NAMES.join('/')}）、`,
-      'launch / stop（给 target 包名，例如 com.android.settings）。',
-      '操作后建议再调 mobile_screenshot 确认。',
+      'tap（点按：提供 x/y 坐标，或使用 text 按界面文本定位）、',
+      'swipe（提供 fromX/fromY/toX/toY，可选 durationMs）、',
+      'type（输入 text，需先聚焦输入框）、',
+      `key（提供 key，取值 ${KEY_NAMES.join('/')}）、`,
+      'launch / stop（提供 target 包名，例如 com.android.settings）。',
+      '操作完成后建议调用 mobile_screenshot 验证结果。',
     ].join(''),
     parameters: {
       type: 'object',
@@ -159,7 +159,7 @@ export function registerTools(ctx, { registry }) {
     isConcurrencySafe: () => false,
     async execute(args, exec) {
       const action = args?.action
-      if (!ACTIONS.includes(action)) throw new Error(`不支持的 action：${action}`)
+      if (!ACTIONS.includes(action)) throw new Error(`不支持的操作类型：${action}`)
       const device = await registry.resolve(sessionIdOf(exec), args?.deviceId)
       const adapter = device.adapter
 
@@ -171,35 +171,35 @@ export function registerTools(ctx, { registry }) {
         if (typeof args.text === 'string' && args.text !== '') {
           const dump = await adapter.uiDump(device.id)
           const node = findNode(dump.nodes, args.text)
-          if (!node) throw new Error(`界面上没找到「${args.text}」，先用 mobile_ui 看看有哪些节点。`)
+          if (!node) throw new Error(`界面中未找到「${args.text}」，请先调用 mobile_ui 获取节点列表。`)
           await adapter.tap(device.id, node.center.x, node.center.y)
           return { ok: true, deviceId: device.id, action, matched: node.text || node.desc, ...node.center }
         }
-        throw new Error('tap 需要 x/y 坐标，或者 text 作为定位文字。')
+        throw new Error('tap 操作需要提供 x/y 坐标，或提供用于定位界面文本的 text。')
       }
 
       if (action === 'swipe') {
         const coords = [args.fromX, args.fromY, args.toX, args.toY]
         if (coords.some((value) => !Number.isFinite(value))) {
-          throw new Error('swipe 需要 fromX/fromY/toX/toY。')
+          throw new Error('swipe 操作需要提供 fromX、fromY、toX 和 toY。')
         }
         await adapter.swipe(device.id, args.fromX, args.fromY, args.toX, args.toY, args.durationMs ?? 300)
         return { ok: true, deviceId: device.id, action }
       }
 
       if (action === 'type') {
-        if (typeof args.text !== 'string') throw new Error('type 需要 text。')
+        if (typeof args.text !== 'string') throw new Error('type 操作需要提供 text。')
         await adapter.text(device.id, args.text)
         return { ok: true, deviceId: device.id, action, length: args.text.length }
       }
 
       if (action === 'key') {
-        if (!args.key) throw new Error(`key 需要 key，取值 ${KEY_NAMES.join('/')}。`)
+        if (!args.key) throw new Error(`key 操作需要提供 key，可选值为 ${KEY_NAMES.join('/')}。`)
         await adapter.key(device.id, args.key)
         return { ok: true, deviceId: device.id, action, key: args.key }
       }
 
-      if (!args.target) throw new Error(`${action} 需要 target 包名。`)
+      if (!args.target) throw new Error(`${action} 操作需要提供 target 包名。`)
       if (action === 'launch') await adapter.launch(device.id, args.target)
       else await adapter.stop(device.id, args.target)
       return { ok: true, deviceId: device.id, action, target: args.target }

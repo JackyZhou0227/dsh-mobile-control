@@ -6,7 +6,7 @@ import { run } from '../exec.js'
 import { Provisioner } from '../provision.js'
 
 const REMOTE_SHOT = '/data/local/tmp/dsh-mobile-shot.jpeg'
-const UNSUPPORTED = '鸿蒙适配器目前只实现了列出设备 / 截图 / 点击 / 滑动 / 按键。'
+const UNSUPPORTED = '当前 HarmonyOS 适配器仅支持列出设备、截图、点击、滑动和按键操作。'
 
 /**
  * 鸿蒙（HarmonyOS NEXT）骨架：走 hdc 命令行，和 Android 的 adb 一一对应。
@@ -23,8 +23,8 @@ export class HarmonyAdapter {
     const found = this.provision.hdcPath()
     if (!found) {
       throw new Error(
-        '找不到 hdc：PATH 和 DevEco Studio 的 SDK 目录里都没有。' +
-          '装好 DevEco Studio 后一般能自动找到；装在别处就在插件配置里设置 hdcPath。',
+        '未找到 hdc：PATH 和 DevEco Studio SDK 目录中均不存在该程序。' +
+          '请安装 DevEco Studio；如 hdc 位于其他目录，请在插件配置中设置 hdcPath。',
       )
     }
     return found
@@ -94,7 +94,7 @@ export class HarmonyAdapter {
   async key(deviceId, name) {
     const map = { back: 'Back', home: 'Home', power: 'Power' }
     const keyEvent = map[name]
-    if (!keyEvent) throw new Error(`鸿蒙只支持 back / home / power，收到：${name}`)
+    if (!keyEvent) throw new Error(`HarmonyOS 仅支持 back / home / power 按键，当前值为：${name}`)
     await this.call(deviceId, ['shell', `uitest uiInput keyEvent ${keyEvent}`])
   }
 

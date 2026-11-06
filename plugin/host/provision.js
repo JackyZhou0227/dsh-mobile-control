@@ -20,16 +20,16 @@ const MAX_SCAN_DIRS = 300
 
 function missingAdb() {
   return new Error(
-    '找不到 adb：PATH、ANDROID_HOME 和常见 SDK 目录里都没有。' +
-      '可以装 Android platform-tools 后把路径填进插件配置的 adbPath，' +
-      '或让 autoProvision 保持打开（默认），插件会自己下载一份到用户缓存目录。',
+    '未找到 adb：PATH、ANDROID_HOME 和常见 SDK 目录中均不存在该程序。' +
+      '请安装 Android platform-tools 并在插件配置中设置 adbPath，' +
+      '或保持 autoProvision 启用（默认），由插件自动下载到用户缓存目录。',
   )
 }
 
 function missingHdc() {
   return new Error(
-    '找不到 hdc：PATH 和 DevEco Studio 的 SDK 目录里都没有。' +
-      '装好 DevEco Studio 后一般能自动找到；装在别处就在插件配置里设置 hdcPath。',
+    '未找到 hdc：PATH 和 DevEco Studio SDK 目录中均不存在该程序。' +
+      '请安装 DevEco Studio；如 hdc 位于其他目录，请在插件配置中设置 hdcPath。',
   )
 }
 
@@ -206,7 +206,7 @@ export class Provisioner {
       await rm(archive, { force: true })
 
       const adb = join(root, 'platform-tools', `adb${this.suffix}`)
-      if (!existsSync(adb)) throw new Error('解压后没找到 adb，platform-tools 的包结构可能变了。')
+      if (!existsSync(adb)) throw new Error('解压后未找到 adb，platform-tools 的目录结构可能已变更。')
       // 真跑一次：缺 DLL 或架构不对时这里就能报出来，而不是等截屏时莫名失败。
       await run(adb, ['version'], { timeout: 20000 })
 
