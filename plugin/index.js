@@ -14,6 +14,8 @@ const DEFAULTS = {
   streamMaxFps: 30,
   streamMaxSize: 1024,
   uiDumpTimeoutMs: 20000,
+  // uiautomator 是间歇性失败：失败后再试一次，往往换个时刻就成了。
+  uiDumpAttempts: 2,
 }
 
 export const inject = ['tools', 'webServer', 'attachments']

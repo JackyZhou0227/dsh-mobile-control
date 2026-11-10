@@ -110,18 +110,42 @@ export function registerTools(ctx, { registry }) {
   tools.push({
     name: 'mobile_ui',
     description:
-      '读取当前界面的可操作节点列表（文本、描述和点击坐标），适合进行精确定位。部分设备的读取操作可能耗时数秒。',
+      '读取当前界面的可操作节点列表（文本、描述和点击坐标），适合进行精确定位。' +
+      '返回的坐标与 mobile_action tap 使用同一坐标空间，可直接使用。' +
+      '视频/直播/滚动动画页面上 uiautomator 可能等不到空闲（约 10s 后失败），此时会返回带分类码的错误，别反复重试。',
     parameters: {
       type: 'object',
       properties: { deviceId: DEVICE_ID },
     },
     output: textOutput({ type: 'object' }),
-    timeoutMs: 60000,
+    timeoutMs: 90000,
     isConcurrencySafe: () => false,
     async execute(args, exec) {
       const device = await registry.resolve(sessionIdOf(exec), args?.deviceId)
+      // 失败时抛 UiDumpError，message 里已经带分类码/前台/耗时，直接透给调用方。
       const dump = await device.adapter.uiDump(device.id)
-      return { ok: true, deviceId: device.id, text: dump.text, nodes: dump.nodes.length }
+      return {
+        ok: true,
+        deviceId: device.id,
+        foreground: dump.foreground ?? null,
+        // 树的覆盖范围（通常比屏幕小，不含导航栏）；bounds 仍是屏幕绝对坐标。
+        treeSpace: dump.width && dump.height ? `${dump.width}×${dump.height}` : null,
+        elapsedMs: dump.elapsedMs,
+        attempts: dump.attempts,
+        nodes: dump.nodes.length,
+        ...(dump.warning === 'splash'
+          ? { warning: '当前前台还是启动页，节点可能不全；稍等一下再读一次。' }
+          : {}),
+        ...(dump.spaceMismatch
+          ? {
+              warning:
+                `UI 树范围 ${dump.spaceMismatch.tree.width}×${dump.spaceMismatch.tree.height} ` +
+                `比屏幕 ${dump.spaceMismatch.screen.width}×${dump.spaceMismatch.screen.height} 还大：` +
+                '坐标空间可能被放大过，别直接点；先用 scripts/ui-probe.mjs 校准。',
+            }
+          : {}),
+        text: dump.text,
+      }
     },
   })
 
@@ -171,9 +195,20 @@ export function registerTools(ctx, { registry }) {
         if (typeof args.text === 'string' && args.text !== '') {
           const dump = await adapter.uiDump(device.id)
           const node = findNode(dump.nodes, args.text)
-          if (!node) throw new Error(`界面中未找到「${args.text}」，请先调用 mobile_ui 获取节点列表。`)
+          if (!node) {
+            throw new Error(
+              `界面中未找到「${args.text}」（前台 ${dump.foreground ?? '未知'}，` +
+                `${dump.nodes.length} 个可定位节点）。请先调用 mobile_ui 获取节点列表。`,
+            )
+          }
           await adapter.tap(device.id, node.center.x, node.center.y)
-          return { ok: true, deviceId: device.id, action, matched: node.text || node.desc, ...node.center }
+          return {
+            ok: true,
+            deviceId: device.id,
+            action,
+            matched: node.text || node.desc,
+            ...node.center,
+          }
         }
         throw new Error('tap 操作需要提供 x/y 坐标，或提供用于定位界面文本的 text。')
       }

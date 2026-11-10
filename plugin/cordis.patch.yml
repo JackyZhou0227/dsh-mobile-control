@@ -9,3 +9,4 @@
         streamMaxFps: 30
         streamMaxSize: 1024
         uiDumpTimeoutMs: 20000
+        uiDumpAttempts: 2
